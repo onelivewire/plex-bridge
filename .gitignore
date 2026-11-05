@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.env
+state/
+config.json
+!examples/config.json
+.env.*
+*.env
+*.log
+*.tar
+*.tar.gz
+backups/
+artifacts/
+*-report.json
+*-preflight.json
+*-command-error.log

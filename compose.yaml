@@ -1,0 +1,88 @@
+name: plex-bridge
+
+x-runtime: &runtime
+  init: true
+  network_mode: host
+  read_only: true
+  user: "10001:10001"
+  tmpfs:
+    - /tmp:size=8m,mode=1777
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  setup:
+    <<: *runtime
+    image: plex-bridge-setup:${BRIDGE_VERSION:-0.1.0-beta.2}
+    build:
+      context: .
+      target: setup
+      args:
+        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.2}
+    environment:
+      SETUP_PATH: /private
+      SETUP_HOST: ${BRIDGE_HOST:?Set BRIDGE_HOST to the reserved LAN IPv4 address}
+      SETUP_PORT: "8795"
+      SETUP_ORIGIN: http://${BRIDGE_HOST:?Set BRIDGE_HOST}:8795
+      EXPECTED_BRIDGE_ORIGIN: http://${BRIDGE_HOST:?Set BRIDGE_HOST}:8794
+      RUNTIME_EXPORTS: /exports
+      HANDOFF_PATH: /handoff
+    volumes:
+      - setup-private:/private
+      - playback-config:/exports/playback
+      - topology-config:/exports/topology
+      - handoff:/handoff
+  topology:
+    <<: *runtime
+    image: plex-bridge-topology:${BRIDGE_VERSION:-0.1.0-beta.2}
+    build:
+      context: .
+      target: topology
+      args:
+        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.2}
+    environment:
+      RUNTIME_PATH: /config
+      HANDOFF_PATH: /handoff
+      LISTEN_HOST: ${BRIDGE_HOST:?Set BRIDGE_HOST}
+      LISTEN_PORT: "8793"
+      HISTORY_PATH: /state/history.json
+      POLICY_PATH: /state/leadership.json
+      TRIGGER_STANDBY_ENABLED: "0"
+    volumes:
+      - topology-config:/config:ro
+      - handoff:/handoff:ro
+      - topology-state:/state
+  playback:
+    <<: *runtime
+    image: plex-bridge-playback:${BRIDGE_VERSION:-0.1.0-beta.2}
+    build:
+      context: .
+      target: playback
+      args:
+        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.2}
+    environment:
+      RUNTIME_PATH: /config
+      HANDOFF_PATH: /handoff
+      LISTEN_HOST: ${BRIDGE_HOST:?Set BRIDGE_HOST}
+      LISTEN_PORT: "8794"
+      STATE_PATH: /state
+      GROUP_API_BASE: http://${BRIDGE_HOST:?Set BRIDGE_HOST}:8793
+      PLEX_GROUP_ENDPOINT_MODE: local
+    volumes:
+      - playback-config:/config:ro
+      - handoff:/handoff:ro
+      - playback-state:/state
+
+volumes:
+  setup-private:
+  playback-config:
+  topology-config:
+  handoff:
+  playback-state:
+  topology-state:

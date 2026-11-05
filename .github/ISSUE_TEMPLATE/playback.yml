@@ -1,0 +1,20 @@
+name: Playback problem
+description: Report a playback failure with a reviewed diagnostic bundle.
+body:
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include the approximate time, action, expected result and actual result. Use generic room labels and say whether sound was audible.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Client and installation
+      description: Plexamp or Symfonium version/platform, bridge version, host OS, Docker/Compose versions, WiiM model/firmware and whether the room was grouped.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Reviewed support bundle
+      description: Run Diagnose playback on the affected room, review the preview, then attach its JSON download. Do not attach credentials, configuration/state backups, signed URLs or unreviewed client/server logs. If unavailable, describe why.

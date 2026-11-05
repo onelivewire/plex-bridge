@@ -1,0 +1,8 @@
+title = "plex-bridge release scan"
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public CPython release-signing fingerprint in official Python image metadata; not a private key"
+regexTarget = "match"
+regexes = ['''GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305''']

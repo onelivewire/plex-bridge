@@ -1,0 +1,18 @@
+plex-bridge
+
+The project owner authorized MIT distribution of this original application.
+Playback and topology implementations were extracted from the owner's earlier
+local bridge services. The public export does not include that installation's
+Git history, inventories, operational scripts, or private state.
+
+No vendored third-party application libraries or copied license notices were
+identified in the reviewed source. Runtime imports use Python's standard
+library. Protocol interoperability uses Plex and WiiM/LinkPlay interfaces;
+this is not an official Plex or WiiM product.
+
+The Docker base includes Python and Alpine Linux packages, which retain their
+own licenses. The application MIT license does not replace those licenses.
+Retain base-image notices and generate a software bill of materials when
+publishing images. Build/test/security tools are separate dependencies and
+retain their respective licenses. This source inspection is not a legal audit
+of every historical contribution.

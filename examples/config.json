@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "advertised_origin": "http://192.0.2.10:8794",
+  "plex_server_origin": "http://192.0.2.20:32400",
+  "default_player_id": "player-a",
+  "players": [
+    {"id": "player-a", "name": "Office", "host": "192.0.2.30", "auto_join_target": false}
+  ]
+}

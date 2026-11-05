@@ -1,0 +1,52 @@
+name: beta checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Source manifest
+        run: python3 tools/check_release.py .
+      - name: Unit, HTTP, and real-browser checks
+        env:
+          PYTHONPATH: .
+          BRIDGE_BROWSER: /usr/bin/google-chrome
+        run: |
+          test -x "$BRIDGE_BROWSER"
+          python3 -m unittest discover -s tests
+      - name: Source secret scan
+        run: docker run --rm -v "$PWD:/src:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /src --config /src/.gitleaks.toml --redact --max-decode-depth 3
+      - name: Fresh install, restart, and restore
+        run: python3 tests/container_acceptance.py . pb-acceptance-ci
+      - name: Image vulnerability and secret scans
+        run: |
+          for service in setup topology playback; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro aquasec/trivy:0.76.0 image --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 "pb-acceptance-ci-$service"
+          done
+      - name: Export all image layers for secret scan
+        run: |
+          docker save -o /tmp/bridge-images.tar pb-acceptance-ci-setup pb-acceptance-ci-topology pb-acceptance-ci-playback
+          python3 tools/extract_image_layers.py /tmp/bridge-images.tar /tmp/bridge-image-scan
+          docker run --rm -v /tmp/bridge-image-scan:/src:ro -v "$PWD/.gitleaks.toml:/scan-config.toml:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /src --config /scan-config.toml --redact --max-decode-depth 3
+      - name: Generate SBOMs
+        run: |
+          for service in setup topology playback; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro aquasec/trivy:0.76.0 image --format cyclonedx "pb-acceptance-ci-$service" > "/tmp/$service-sbom.json"
+          done
+      - name: Retain reviewed image distribution and SBOMs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: beta-images-and-sboms
+          path: |
+            /tmp/bridge-images.tar
+            /tmp/setup-sbom.json
+            /tmp/topology-sbom.json
+            /tmp/playback-sbom.json
+          if-no-files-found: error
+          retention-days: 14

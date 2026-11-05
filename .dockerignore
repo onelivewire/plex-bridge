@@ -1,0 +1,6 @@
+**
+!Dockerfile
+!plex_bridge/
+!plex_bridge/*.py
+!LICENSE
+!NOTICE
