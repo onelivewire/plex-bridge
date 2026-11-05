@@ -21,6 +21,7 @@
     "docs/support.md",
     "docs/symfonium.md",
     "docs/troubleshooting.md",
+    "docs/using-the-bridge.md",
     "docs/validation.md",
     "examples/config.json",
     "plex_bridge/__init__.py",

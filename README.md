@@ -83,6 +83,23 @@ settings. Focus requires recoverable bridge-owned Plex playback. Spotify Focus
 and standby-trigger automation are experimental and are not configured by the
 beta installer. Native WiiM Plex playback is not a bridge-owned queue.
 
+## Feature guide
+
+The [complete usage guide](docs/using-the-bridge.md) explains every dashboard
+control, its effect on grouped rooms, and the beta's experimental controls.
+
+| What you want to do | Instructions |
+| --- | --- |
+| Install, discover devices, link Plex, and verify sound | [Setup](docs/setup.md) |
+| Start music, read room status, control transport/volume/mute | [Using the bridge](docs/using-the-bridge.md#choose-music-and-read-room-status) |
+| Join rooms, choose automatic leaders, or move playback | [Grouping and Focus](docs/using-the-bridge.md#join-a-playing-group-and-choose-eligible-leaders) |
+| Leave/disband groups, Sleep, or restart a WiiM | [Room actions](docs/using-the-bridge.md#leave-disband-and-sleep) |
+| Assign WiiM hardware/remote presets | [Presets](docs/presets.md) |
+| Browse with Symfonium and manage Last.fm | [Symfonium and Last.fm](docs/symfonium.md) |
+| Understand diagnostics, history, and logs | [Support](docs/support.md) |
+| Back up, restore, update, roll back, or uninstall | [Maintenance](docs/maintenance.md) |
+| Understand experimental controls and unsupported setups | [Feature limits](docs/using-the-bridge.md#experimental-and-unsupported-features) |
+
 ## Help and maintenance
 
 - [Setup and network addresses](docs/setup.md)
