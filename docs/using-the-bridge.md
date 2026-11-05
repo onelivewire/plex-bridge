@@ -31,9 +31,9 @@ Symfonium, not by expecting Play to create a new queue.
 
 Move the **Room volume** slider and choose **Set volume**. This changes that
 physical WiiM only. **Mute** saves the room's current volume and sets it to zero;
-**Unmute** restores the saved value. It does not pause the shared music. This
-saved mute level is process memory, so do not rely on it surviving a bridge
-restart; set the volume explicitly if needed.
+**Unmute** restores the saved value. It does not pause the shared music. The saved level is persisted with bridge
+state. Unmute requires a saved dashboard mute and a current volume of zero; if
+another app changed the level, set the volume explicitly instead.
 
 ## Join a playing group and choose eligible leaders
 
