@@ -31,6 +31,9 @@ accepted beta targets. Read [security and privacy](SECURITY.md).
 
 ## Install
 
+Using Unraid? Start with the [Unraid installation notes](docs/setup.md#installing-on-unraid),
+including Compose Manager, persistent storage, backups, and the platform validation limits.
+
 Start in the directory containing this README and `compose.yaml` from the
 reviewed release archive. Do not copy an existing installation's private data.
 
