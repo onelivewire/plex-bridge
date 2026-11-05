@@ -1,53 +1,56 @@
-# 0.1.0-beta.2 validation record
+# 0.1.0-beta.3 validation record
 
-This is an initial tester beta. The package includes normal Plexamp setup and
-optional Symfonium control with selective listen-report suppression. It is not
-certified across all WiiM hardware, Plex accounts, or Android TV interfaces.
+This initial tester beta defaults to one container supervising setup, topology,
+and playback, with one persistent `/data` mount. The optional split layout
+retains the three-container/six-volume model. It is not certified across all
+WiiM hardware, Unraid versions, Plex accounts, or Android TV interfaces.
 
 ## Source validation
 
-On 2026-11-05 UTC, a fresh allowlisted export passed 318 tests, including all
-three real-Chromium DOM tests and four HTTP integration tests against an isolated
-Plex substitute. No tests were skipped. The source scanner (Gitleaks 8.30.1,
-recursive decoding enabled) found no secrets. The export includes no private
-installation history, operational runbooks, credentials, or runtime state.
-Import-closure validation guards against omitting runtime modules from the
-release list. SHA256SUMS identifies the exact distributed source files.
+On 2026-11-05 UTC, 324 tests passed locally with no skips, including three
+real-Chromium DOM checks, HTTP proxy integration, child-exit cleanup, bounded
+shutdown, spawn-failure cleanup, and multi-service health checks. The release
+workflow repeats these tests against the exact exported source. Import-closure
+and SHA256SUMS checks guard the export boundary. No private installation history,
+credentials, runtime state, or operational runbooks are in the public export.
 
-The browser backend and HTTP Plex server are synthetic; these tests do not
-prove audible playback. Household acceptance of the Companion relay and
-filtered provider confirmed audible playback, pause/resume, track transition,
-and one completed Last.fm entry. That household test predates the beta's added
-privacy-safe proxy diagnostic events; it is not an independent install.
+The earlier household acceptance of the unchanged Companion relay/listen filter
+confirmed audible playback, pause/resume, track transition and one completed
+Last.fm entry. That is not hardware acceptance of the new container packaging.
+The household runtime has not been automatically replaced by this release.
 
 ## Container release gate
 
-The repository's **beta checks** workflow builds all three images from the exact
-export, exercises fresh setup, credential isolation, restart and same-version
-restore in network-isolated containers, scans source and every image layer with
-Gitleaks, scans each image for HIGH/CRITICAL vulnerabilities and secrets with
-Trivy, and produces CycloneDX SBOMs. Publication requires a successful run for
-the release commit. See the release notes and that commit's Actions run for the
-actual outcome; older candidate results are not evidence for this build.
+Publication requires a successful **beta checks** run for the release commit.
+See release notes for its exact run and results. The workflow checks:
 
-The optional image archive contains the three tested Linux amd64 images named
-`pb-acceptance-ci-setup`, `pb-acceptance-ci-topology`, and
-`pb-acceptance-ci-playback`. Standard installation builds from source; see the
-release notes for loading and retagging the optional images. No rolling registry
-tag or unattended image update is supplied.
+- Source secrets with Gitleaks and all unit/HTTP/browser tests.
+- Existing split-container fresh setup, credential mount isolation, restart,
+  diagnostic privacy and six-volume stopped restore.
+- Single-container HTTP setup, both provisioning waiters, all three listeners,
+  diagnostic privacy, restart, forced child death, whole-bundle failure, clean
+  shutdown, one-volume stopped restore and a Linux host-directory restore.
+- Gitleaks scanning of every saved image layer; Trivy HIGH/CRITICAL vulnerability
+  and secret gates for the bundle and all three split targets; CycloneDX SBOMs.
+
+Container tests use synthetic devices, no published ports, and disabled external
+networking. They do not contact real Plex accounts or WiiMs. The appdata-style
+bind-mount test is on Linux Docker, not an Unraid host. The published single-image
+archive contains the tested Linux amd64 `pb-acceptance-ci-bundle:latest` image;
+release notes explain loading and retagging it. Standard installation builds
+from source. No rolling registry tag or unattended updater is supplied.
 
 ## Still pending
 
-- An independent household completing the [beta checklist](beta-testing.md),
-  including amplifier wake after Sleep for its model/firmware.
-- Broader hardware/platform coverage (including ARM), offline-cloud continuity,
-  cross-version migration/rollback, and controlled Focus-failure hardware trials.
-- Independent security review. LAN-only Companion trust remains a documented
-  design constraint.
-- Shared/managed-account and multi-user Last.fm attribution acceptance, plus
-  broader Symfonium authentication and Android TV input/accessibility coverage.
+- An independent household and Unraid host completing the [beta checklist](beta-testing.md),
+  including real playback, amplifier wake, storage backup and recovery.
+- ARM, other platforms/firmware, offline-cloud continuity, gapless/bit-perfect
+  claims, cross-version migration/rollback, and split-to-bundle state migration.
+- Independent security review. The default bundle shares its filesystem/UID
+  between processes; LAN-only Companion trust remains a design constraint.
+- Shared/managed-account and multi-user Last.fm attribution, broader Symfonium
+  authentication and Android TV accessibility coverage.
 
-Scans are snapshots tied to the pinned image and scanner database at test time.
-Rescan before later releases. A passing scan does not exclude lower-severity or
-undisclosed vulnerabilities. No private scan logs, test state, backups, or live
-configuration belong in the release assets.
+Scans are snapshots tied to the exact image and scanner database at test time.
+Rescan before future releases. Passing scans do not exclude lower-severity or
+undisclosed vulnerabilities. Private test state/logs never belong in assets.

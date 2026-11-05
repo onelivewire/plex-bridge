@@ -6,9 +6,10 @@ playback controls, native WiiM grouping, and amplifier-off Sleep.
 [Symfonium](docs/symfonium.md) is an optional controller, with a dedicated
 connection for avoiding duplicate Last.fm reports.
 
-**Version: 0.1.0-beta.2.** This is a candidate for a small, supervised beta,
+**Version: 0.1.0-beta.3.** This is a candidate for a small, supervised beta,
 not a broadly certified release. See [validation results](docs/validation.md) and the [tester checklist](docs/beta-testing.md).
-No published image registry is required: build the three images from this source.
+No published image registry is required: build one image from this source.
+Setup, playback, and room grouping run together in one container with one data mount.
 
 ## Before installing
 
@@ -49,7 +50,7 @@ Run Docker commands with the permissions required on your host.
 docker compose build
 docker compose up -d
 docker compose ps
-docker compose exec setup python -c 'import json; from pathlib import Path; print(json.loads(Path("/private/setup-code.json").read_text())["code"])'
+docker compose exec bridge python -c 'import json; from pathlib import Path; print(json.loads(Path("/data/setup/setup-code.json").read_text())["code"])'
 ```
 
 The last command displays your private setup code. It prevents someone else on
@@ -61,9 +62,15 @@ included [step-by-step playback support instructions](docs/support.md) with your
 installation. They cover failures, reviewing results, submitting a report, and
 what to do when the dashboard is unavailable.
 
-The setup, playback, and topology containers start together. Until local setup
-finishes, the latter two wait for configuration; a healthy container alone does
-not mean Plex linking or room verification is complete.
+The container supervises setup, playback, and topology processes together. Until
+local setup finishes, playback and topology wait for configuration. Its health
+check covers all three processes; healthy does not mean Plex linking or audible
+playback is verified. If a process exits, the whole container stops so Docker
+can restart it consistently. All durable files are under `/data`.
+
+Existing three-container installations: keep using your existing layout or
+[the split Compose instructions](docs/split-layout.md). The new default does
+not automatically migrate the old six volumes.
 
 ## Use
 

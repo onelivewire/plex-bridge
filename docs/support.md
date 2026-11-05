@@ -153,7 +153,7 @@ For live local inspection from the installation directory:
 
 ```sh
 docker compose ps
-docker compose logs --since 10m --tail 200 playback
+docker compose logs --since 10m --tail 200 bridge
 ```
 
 Logs are structured event records, not a raw protocol transcript. They retain
@@ -167,3 +167,10 @@ If a maintainer needs Symfonium or Plex's own debug logs, use those products'
 private support procedures and inspect/redact the files first. They do not share
 this bridge's allowlist and may contain credentials, paths, and listening data.
 Do not attach them unreviewed to a public issue.
+
+For the retained split layout, use `docker compose -f compose.split.yaml logs
+--since 10m --tail 200 playback`. The single container combines records from all
+services; each record identifies its component. An unhealthy container does not
+automatically restart just because an HTTP probe failed. Child-process exits
+stop the bundle and its restart policy restarts it; a hung process requires
+inspection and an operator restart after collecting diagnostics.

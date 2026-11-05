@@ -23,13 +23,15 @@ opt-in, uses fresh resources and `--network none`, and retains stopped resources
 for inspection:
 
 ```sh
-python3 tests/container_acceptance.py . pb-acceptance-unique-run
+python3 tests/bundle_acceptance.py . pb-acceptance-unique-run
+# Optional split-layout regression:
+python3 tests/container_acceptance.py . pb-acceptance-split-run
 ```
 
-Use a new prefix each time. This builds three images, performs synthetic setup,
-checks credential isolation and support-download privacy, restarts the bundle,
-and restores all six stopped volumes into fresh volumes to verify persisted
-identity/handoff. It never contacts a real room or Plex account. Run it on a
+Use a new prefix each time. Bundle acceptance builds one image, performs
+synthetic setup, checks support privacy, forces a child-process failure, verifies
+shutdown/restart, and restores one data volume and a Linux host-directory mount.
+Split acceptance separately checks three images and six-volume credential isolation. It never contacts a real room or Plex account. Run it on a
 Docker-capable Linux host; local Docker permissions are required.
 
 ## Independent household acceptance — pending

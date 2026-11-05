@@ -98,7 +98,7 @@ def main():
         raise SystemExit("BRIDGE_SERVICE must be playback or topology")
     directory = os.environ.get("RUNTIME_PATH", "/config")
     handoff = os.environ.get("HANDOFF_PATH", "/handoff")
-    waiting = Path("/tmp/bridge-waiting.json")
+    waiting = Path(os.environ.get("WAITING_PATH", "/tmp/bridge-waiting.json"))
     atomic_write(waiting, {"pid": os.getpid()})
     logging.getLogger("plex_bridge").info("", extra={"event": "setup_wait"})
     try:

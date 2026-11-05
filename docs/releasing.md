@@ -9,8 +9,8 @@ history. Only initialize a fresh public repository from the reviewed export.
 3. Run `python3 tools/check_release.py .` and a current Gitleaks directory scan
    with `--redact --max-decode-depth 3`. Review findings; do not suppress whole
    directories to make the scan pass.
-4. Build all three images from the exact export. Run isolated fresh-install,
-   restart, same-version restore acceptance. Save the exact source manifest and
+4. Build the bundle and three optional split images from the exact export. Run isolated fresh-install,
+   restart, child-failure/shutdown and same-version restore acceptance. Save the exact source manifest and
    image IDs with the release evidence.
 5. Save each image with Docker and scan every layer, not just the merged rootfs.
    Use Trivy (secret/vulnerability scanners) and retain an SBOM. Review any

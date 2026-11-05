@@ -15,8 +15,12 @@ administrator password protects every Plex-compatible route.
   server identity verification. Keep network access restricted to trusted hosts.
 - Source-IP preset checks and signed media URLs add restrictions but do not turn
   an untrusted LAN into a secure deployment. Do not put a public proxy in front.
-- Docker administrative access gives access to stored credentials. Containers
-  run unprivileged with read-only roots; six named volumes hold durable state.
+- Docker administrative access gives access to stored credentials. The default container
+  runs unprivileged with a read-only root; one `/data` mount holds durable state.
+- The single-container processes share a UID and filesystem. Scoped credential
+  files organize access but are not isolation boundaries between these processes.
+  The optional split layout retains separate mounts and read-only runtime configs.
+  Choose that layout if stronger internal credential separation matters.
 
 ## What is private
 

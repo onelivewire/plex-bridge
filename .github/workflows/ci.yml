@@ -24,19 +24,22 @@ jobs:
         run: docker run --rm -v "$PWD:/src:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /src --config /src/.gitleaks.toml --redact --max-decode-depth 3
       - name: Fresh install, restart, and restore
         run: python3 tests/container_acceptance.py . pb-acceptance-ci
+      - name: Single-container install, child failure, restart and restore
+        run: python3 tests/bundle_acceptance.py . pb-acceptance-ci
       - name: Image vulnerability and secret scans
         run: |
-          for service in setup topology playback; do
+          for service in setup topology playback bundle; do
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro aquasec/trivy:0.76.0 image --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 "pb-acceptance-ci-$service"
           done
       - name: Export all image layers for secret scan
         run: |
-          docker save -o /tmp/bridge-images.tar pb-acceptance-ci-setup pb-acceptance-ci-topology pb-acceptance-ci-playback
+          docker save -o /tmp/bridge-images.tar pb-acceptance-ci-setup pb-acceptance-ci-topology pb-acceptance-ci-playback pb-acceptance-ci-bundle
+          docker save -o /tmp/bridge-bundle.tar pb-acceptance-ci-bundle
           python3 tools/extract_image_layers.py /tmp/bridge-images.tar /tmp/bridge-image-scan
           docker run --rm -v /tmp/bridge-image-scan:/src:ro -v "$PWD/.gitleaks.toml:/scan-config.toml:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /src --config /scan-config.toml --redact --max-decode-depth 3
       - name: Generate SBOMs
         run: |
-          for service in setup topology playback; do
+          for service in setup topology playback bundle; do
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro aquasec/trivy:0.76.0 image --format cyclonedx "pb-acceptance-ci-$service" > "/tmp/$service-sbom.json"
           done
       - name: Retain reviewed image distribution and SBOMs
@@ -45,6 +48,8 @@ jobs:
           name: beta-images-and-sboms
           path: |
             /tmp/bridge-images.tar
+            /tmp/bridge-bundle.tar
+            /tmp/bundle-sbom.json
             /tmp/setup-sbom.json
             /tmp/topology-sbom.json
             /tmp/playback-sbom.json
