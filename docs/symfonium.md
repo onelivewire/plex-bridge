@@ -123,3 +123,23 @@ the proxy does not select a Last.fm account or guarantee third-party delivery.
 
 The endpoint is HTTP on a trusted LAN, not a remote-access gateway. See the
 [security boundaries](../SECURITY.md) before using it.
+
+## Native WiiM Next and rolling queues
+
+Current source synchronizes Symfonium's rolling current/next queue with the
+WiiM queue. Physical Next then advances to the upcoming track instead of
+restarting the only track left on the renderer. Updates edit upcoming entries
+and remove discarded played history without issuing Play or Seek; the bridge
+reads the queue back after each edit. The controller UI may update after the
+audio transition.
+
+This fix is newer than the published beta.3 image assets. Use a reviewed build
+from the updated source or a later release that explicitly includes it.
+Arbitrary reordering of already-played history is not supported by this in-place
+update; it is rejected without editing the native queue. A physical transition
+racing a queue edit can require the controller to retry its refresh.
+
+After a bridge restart, check the cast picker: Symfonium may have fallen back
+to Local playback. Select the Plex Bridge endpoint again before testing. To
+verify the queue fix, start an album and press the WiiM's physical Next twice,
+allowing the controller to receive each transition and supply the next track.

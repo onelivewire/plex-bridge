@@ -569,6 +569,7 @@ class WiiMRendererClient:
     def __init__(self, timeout=3, playlist_index_base=1):
         self.timeout = timeout
         self.playlist_index_base = playlist_index_base
+        self.direct_sessions = {}
         self.ssl_context = ssl._create_unverified_context()
 
     @timed("wiim_http")
@@ -711,7 +712,7 @@ class WiiMRendererClient:
         return cls.didl_item_metadata(session.current, media_url, artwork_url)
 
     @classmethod
-    def queue_context(cls, entries):
+    def queue_context(cls, entries, current_index=0):
         tracks = []
         for index, (item, media_url, artwork_url) in enumerate(entries, 1):
             metadata = html.escape(
@@ -733,7 +734,7 @@ class WiiMRendererClient:
             "<QueueVersion>2.0</QueueVersion><Radio>0</Radio>"
             "<SourceName>Local</SourceName><PicUrl></PicUrl>"
             f"<TotalNumber>{count}</TotalNumber><TrackNumber>{count}</TrackNumber>"
-            "<LastPlayIndex>1</LastPlayIndex></ListInfo><Tracks>"
+            f"<LastPlayIndex>{current_index + 1}</LastPlayIndex></ListInfo><Tracks>"
             + "".join(tracks)
             + "</Tracks></PlayList>"
         )
@@ -841,6 +842,7 @@ class WiiMRendererClient:
                 "WiiM native PlayQueue rejected the Plex queue; using direct track playback",
                 exc_info=True,
             )
+            self.direct_sessions[device.id] = session.renderer_session_id
             current = entries[session.current_index]
             return self.start_session(device, session, current[1], current[2])
         if session.offset_ms:
@@ -849,6 +851,84 @@ class WiiMRendererClient:
             self.command(device, "setPlayerCmd:pause")
         elif session.state == "stopped":
             self.command(device, "setPlayerCmd:stop")
+
+    def replace_queue_session(self, device: Device, session: PlexSession, entries):
+        """Edit a rolling queue without CreateQueue (which can start playback)."""
+        if self.direct_sessions.get(device.id) == session.renderer_session_id:
+            return
+        desired = [(item.play_queue_item_id, url) for item, url, _ in entries]
+
+        def value(root, name):
+            return next((n.text or "" for n in root.iter()
+                         if n.tag.rsplit("}", 1)[-1] == name), "")
+
+        def read():
+            root = self.play_queue(device, "BrowseQueue", [("QueueName", "CurrentQueue")])
+            context = value(root, "QueueContext")
+            if not context:
+                raise FocusError("native queue unavailable during refresh")
+            tracks = ET.fromstring(context).find("Tracks")
+            if tracks is None:
+                raise FocusError("native queue has no tracks")
+            return [(track.findtext("Id", ""), track.findtext("URL", "")) for track in tracks]
+
+        def guard(expected_index):
+            index = self.play_queue(device, "GetQueueIndex", [("QueueName", "CurrentQueue")])
+            if value(index, "CurrentIndex") != str(expected_index + 1):
+                raise FocusError("native queue advanced during refresh; retry")
+            uri, _ = self.current_track(device)
+            if uri != desired[session.current_index][1]:
+                raise FocusError("native track changed during refresh; retry")
+
+        native = read()
+        current = desired[session.current_index]
+        matches = [i for i, entry in enumerate(native) if entry == current]
+        if len(matches) != 1:
+            raise FocusError("current track is not unique in native queue")
+        index = matches[0]
+        # Rolling controllers discard played items. Retain any requested history;
+        # arbitrary edits before the current track need a separate implementation.
+        prune = index - session.current_index
+        if prune < 0 or native[prune:index] != desired[:session.current_index]:
+            raise FocusError("refresh changes played history; native edit unsupported")
+        if native == desired:
+            return
+        guard(index)
+        future = desired[session.current_index + 1:]
+        retained = 0
+        for old, new in zip(native[index + 1:], future):
+            if old != new:
+                break
+            retained += 1
+        cut = index + 1 + retained
+        if len(native) > cut:
+            guard(index)
+            self.play_queue(device, "RemoveTracksInQueue", [
+                ("QueueName", "CurrentQueue"), ("RangStart", cut + 1),
+                ("RangEnd", len(native)), ("Action", 0),
+            ])
+            native = native[:cut]
+            if read() != native:
+                raise FocusError("native queue removal did not apply")
+        tail = entries[session.current_index + 1 + retained:]
+        if tail:
+            guard(index)
+            self.play_queue(device, "AppendTracksInQueueEx", [
+                ("QueueContext", self.queue_context(tail)), ("Direction", 0),
+                ("StartIndex", len(native)), ("Play", 0), ("Action", 0),
+            ])
+            native += future[retained:]
+            if read() != native:
+                raise FocusError("native queue append did not apply")
+        if prune:
+            guard(index)
+            self.play_queue(device, "RemoveTracksInQueue", [
+                ("QueueName", "CurrentQueue"), ("RangStart", 1),
+                ("RangEnd", prune), ("Action", 0),
+            ])
+        if read() != desired:
+            raise FocusError("native queue refresh verification failed")
+        guard(session.current_index)
 
     def select_queue_index(self, device: Device, index: int, state="playing"):
         self.play_queue(
@@ -1542,16 +1622,18 @@ class PlexBridge:
         if getattr(self, 'diagnostics', None) is not None:
             self.diagnostics.bind_session(session)
         if hasattr(self.renderer, "start_queue_session"):
-            entries = []
-            for item in session.items:
-                media_url = self.public_base + self.media_path(session, item)
-                art_path = self.art_path(session, item)
-                artwork_url = self.public_base + art_path if art_path else ""
-                entries.append((item, media_url, artwork_url))
-            return self.renderer.start_queue_session(device, session, entries)
+            return self.renderer.start_queue_session(device, session, self._renderer_entries(session))
         self.renderer.start_session(
             device, session, self.media_url(session), self.artwork_url(session)
         )
+
+    def _renderer_entries(self, session):
+        entries = []
+        for item in session.items:
+            art_path = self.art_path(session, item)
+            entries.append((item, self.public_base + self.media_path(session, item),
+                            self.public_base + art_path if art_path else ""))
+        return entries
 
     def resolve_art(self, path: str):
         session = self.store.snapshot()
@@ -2116,10 +2198,16 @@ class PlexBridge:
                 play_queue_version=queue_version,
                 shuffle=shuffled,
             )
-            # refreshPlayQueue is often a queue-only edit such as Play Next.
-            # Preserve the active signed renderer session and audio stream;
-            # Companion skips and the next track boundary use the new order.
+            # Controllers such as Symfonium publish a rolling current+next
+            # queue. Update the physical queue too, without restarting audio.
+            # Publish signed media paths before the WiiM can preload new items.
             self.store.save(candidate, self.store.token)
+            if session.state != "stopped" and hasattr(self.renderer, "replace_queue_session"):
+                device = self.devices[session.target_device_id]
+                # Keep the controller's desired state if an edit fails midway:
+                # it authorizes newly appended URLs and lets an identical retry
+                # reconcile the observed queue instead of duplicating changes.
+                self.renderer.replace_queue_session(device, candidate, self._renderer_entries(candidate))
             self.notify_subscribers()
             self.report_server_timeline(candidate, force=True)
             return candidate

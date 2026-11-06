@@ -53,7 +53,11 @@ class TransportRegression(unittest.TestCase):
         renderer.play_queue = Mock(side_effect=FocusError('unsupported'))
         renderer.queue_context = Mock(return_value='context')
         renderer.start_session = Mock()
-        renderer.start_queue_session(NS(), NS(current_index=0), [('item', 'url', 'metadata')])
+        device = NS(id='room')
+        session = NS(current_index=0, renderer_session_id='session')
+        renderer.start_queue_session(device, session, [('item', 'url', 'metadata')])
+        renderer.replace_queue_session(device, session, [])
+        self.assertEqual(renderer.play_queue.call_count, 1)
         renderer.start_session.assert_called_once()
 
     def test_safe_diagnostic_reason_and_operation(self):

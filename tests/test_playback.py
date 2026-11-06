@@ -1301,6 +1301,122 @@ class PlexBridgeTests(unittest.TestCase):
         self.bridge.resolve_playlist(playlist_path)
 
 
+    def rolling_queue(self):
+        root = FakePlexServer().play_queue("", "", "", "")
+        root.remove(root.findall("Track")[0])
+        root.set("playQueueVersion", "8")
+        return root
+
+    def test_refresh_updates_native_queue_without_restarting_current_audio(self):
+        original = self.play()
+        self.server.play_queue = lambda *_: self.rolling_queue()
+        updates = []
+        def update(device, session, entries):
+            self.assertEqual(self.bridge.store.snapshot(), session)
+            for _, url, _ in entries:
+                self.bridge.resolve_media(url.replace(self.bridge.public_base, ""))
+            updates.append((device, session, entries))
+        self.renderer.replace_queue_session = update
+        changed = self.bridge.playback_command("refreshPlayQueue", {"playQueueID": ["42"]})
+        self.assertEqual(len(updates), 1)
+        self.assertEqual(changed.current.play_queue_item_id, original.current.play_queue_item_id)
+        self.assertEqual(changed.current_index, 0)
+        self.assertEqual(changed.offset_ms, original.offset_ms)
+        self.assertEqual(changed.renderer_session_id, original.renderer_session_id)
+        self.assertEqual(changed.renderer_queue_version, original.renderer_queue_version)
+        self.assertEqual(len(self.renderer.started), 1)
+        self.assertEqual(self.renderer.applied, [])
+        self.assertEqual(self.renderer.transport, [])
+        self.bridge.playback_command("refreshPlayQueue", {"playQueueID": ["42"]})
+        self.assertEqual(len(updates), 2)
+
+    def test_failed_native_refresh_retains_desired_queue_for_retry(self):
+        original = self.play()
+        self.server.play_queue = lambda *_: self.rolling_queue()
+        self.renderer.replace_queue_session = Mock(side_effect=FocusError("queue unavailable"))
+        with self.assertRaises(FocusError):
+            self.bridge.playback_command("refreshPlayQueue", {"playQueueID": ["42"]})
+        self.assertEqual(self.bridge.store.snapshot().current_index, 0)
+        self.assertEqual(self.bridge.store.snapshot().current, original.current)
+        self.assertEqual(len(self.renderer.started), 1)
+
+    def native_queue_fixture(self, fail_append=False, ignore_append=False):
+        session = self.play()
+        entries = self.bridge._renderer_entries(session)
+        native = list(entries[:2])
+        state = {"index": 1, "fail_append": fail_append}
+        renderer = WiiMRendererClient()
+        calls = []
+        def request(device, action, args):
+            args = dict(args)
+            calls.append(action)
+            response = ET.Element("response")
+            if action == "BrowseQueue":
+                ET.SubElement(response, "QueueContext").text = renderer.queue_context(native)
+            elif action == "GetQueueIndex":
+                ET.SubElement(response, "CurrentIndex").text = str(state["index"] + 1)
+            elif action == "RemoveTracksInQueue":
+                start, end = args["RangStart"] - 1, args["RangEnd"]
+                self.assertFalse(start <= state["index"] < end)
+                del native[start:end]
+                if end <= state["index"]:
+                    state["index"] -= end - start
+            elif action == "AppendTracksInQueueEx":
+                self.assertEqual(args["Play"], 0)
+                if state["fail_append"]:
+                    state["fail_append"] = False
+                    raise FocusError("temporary append failure")
+                if not ignore_append:
+                    for track in ET.fromstring(args["QueueContext"]).find("Tracks"):
+                        native.append(next(e for e in entries if e[0].play_queue_item_id == track.findtext("Id")))
+            else:
+                self.fail("Unexpected transport operation: " + action)
+            return response
+        renderer.play_queue = request
+        renderer.current_track = lambda _: (entries[1][1], state["index"])
+        renderer.command = Mock()
+        renderer.av_transport = Mock()
+        return renderer, session, entries, native, state, calls
+
+    def test_native_rolling_refresh_appends_then_prunes_without_play(self):
+        r, session, entries, native, state, calls = self.native_queue_fixture()
+        desired = replace(session, items=session.items[1:], current_index=0)
+        r.replace_queue_session(ROOM, desired, entries[1:])
+        self.assertEqual(native, entries[1:])
+        self.assertEqual(state["index"], 0)
+        mutations = [c for c in calls if c not in ("BrowseQueue", "GetQueueIndex")]
+        self.assertEqual(mutations, ["AppendTracksInQueueEx", "RemoveTracksInQueue"])
+        calls.clear()
+        r.replace_queue_session(ROOM, desired, entries[1:])
+        self.assertEqual(calls, ["BrowseQueue"])
+        r.command.assert_not_called()
+        r.av_transport.assert_not_called()
+
+    def test_native_refresh_retries_after_append_failure(self):
+        r, session, entries, native, state, calls = self.native_queue_fixture(fail_append=True)
+        desired = replace(session, items=session.items[1:], current_index=0)
+        with self.assertRaises(FocusError):
+            r.replace_queue_session(ROOM, desired, entries[1:])
+        self.assertEqual(native, entries[:2])
+        r.replace_queue_session(ROOM, desired, entries[1:])
+        self.assertEqual(native, entries[1:])
+
+    def test_native_refresh_rejects_successful_noop(self):
+        r, session, entries, native, state, calls = self.native_queue_fixture(ignore_append=True)
+        desired = replace(session, items=session.items[1:], current_index=0)
+        with self.assertRaisesRegex(FocusError, "append did not apply"):
+            r.replace_queue_session(ROOM, desired, entries[1:])
+        self.assertNotIn("RemoveTracksInQueue", calls)
+
+    def test_native_refresh_does_not_edit_a_new_current_track(self):
+        r, session, entries, native, state, calls = self.native_queue_fixture()
+        r.current_track = lambda _: ("another-source", 1)
+        desired = replace(session, items=session.items[1:], current_index=0)
+        with self.assertRaisesRegex(FocusError, "track changed"):
+            r.replace_queue_session(ROOM, desired, entries[1:])
+        self.assertEqual(native, entries[:2])
+        self.assertNotIn("AppendTracksInQueueEx", calls)
+
     def test_queue_item_identity_disambiguates_repeated_radio_track(self):
         root = ET.fromstring("""
             <MediaContainer playQueueID="42" playQueueVersion="9"
