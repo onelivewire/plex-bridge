@@ -19,12 +19,12 @@ x-runtime: &runtime
 services:
   setup:
     <<: *runtime
-    image: plex-bridge-setup:${BRIDGE_VERSION:-0.1.0-beta.3}
+    image: plex-bridge-setup:${BRIDGE_VERSION:-0.1.0-beta.4}
     build:
       context: .
       target: setup
       args:
-        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.3}
+        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.4}
     environment:
       SETUP_PATH: /private
       SETUP_HOST: ${BRIDGE_HOST:?Set BRIDGE_HOST to the reserved LAN IPv4 address}
@@ -40,12 +40,12 @@ services:
       - handoff:/handoff
   topology:
     <<: *runtime
-    image: plex-bridge-topology:${BRIDGE_VERSION:-0.1.0-beta.3}
+    image: plex-bridge-topology:${BRIDGE_VERSION:-0.1.0-beta.4}
     build:
       context: .
       target: topology
       args:
-        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.3}
+        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.4}
     environment:
       RUNTIME_PATH: /config
       HANDOFF_PATH: /handoff
@@ -60,12 +60,12 @@ services:
       - topology-state:/state
   playback:
     <<: *runtime
-    image: plex-bridge-playback:${BRIDGE_VERSION:-0.1.0-beta.3}
+    image: plex-bridge-playback:${BRIDGE_VERSION:-0.1.0-beta.4}
     build:
       context: .
       target: playback
       args:
-        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.3}
+        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.4}
     environment:
       RUNTIME_PATH: /config
       HANDOFF_PATH: /handoff

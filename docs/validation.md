@@ -1,4 +1,21 @@
-# 0.1.0-beta.3 validation record
+# 0.1.0-beta.4 validation record
+
+Beta.4 adds verified in-place synchronization of rolling Plex queues with the
+WiiM native queue. The preceding source commit passed 330 tests including real
+Chrome, fresh setup/restart/restore for both layouts, source and image-layer
+secret scans, and HIGH/CRITICAL image vulnerability gates. The exact beta.4
+versioned build must pass the same CI gates before its assets are published;
+the release notes link that run and the downloadable checksums/SBOMs.
+
+Household acceptance verified uninterrupted append and played-history removal,
+then a fresh Symfonium cast and two consecutive physical WiiM Next actions with
+native queue readback after each. Last.fm controller-report suppression passed;
+a new scrobble count was not repeated for this patch. Arbitrary rearrangement
+of played history remains unsupported. Independent hardware/Unraid, ARM,
+cross-version migrations and independent security review remain pending.
+
+## Prior beta.3 validation
+
 
 This initial tester beta defaults to one container supervising setup, topology,
 and playback, with one persistent `/data` mount. The optional split layout

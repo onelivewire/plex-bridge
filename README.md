@@ -6,7 +6,7 @@ playback controls, native WiiM grouping, and amplifier-off Sleep.
 [Symfonium](docs/symfonium.md) is an optional controller, with a dedicated
 connection for avoiding duplicate Last.fm reports.
 
-**Version: 0.1.0-beta.3.** This is a candidate for a small, supervised beta,
+**Version: 0.1.0-beta.4.** This is a candidate for a small, supervised beta,
 not a broadly certified release. See [validation results](docs/validation.md) and the [tester checklist](docs/beta-testing.md).
 No published image registry is required: build one image from this source.
 Setup, playback, and room grouping run together in one container with one data mount.

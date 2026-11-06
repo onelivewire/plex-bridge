@@ -133,8 +133,8 @@ and remove discarded played history without issuing Play or Seek; the bridge
 reads the queue back after each edit. The controller UI may update after the
 audio transition.
 
-This fix is newer than the published beta.3 image assets. Use a reviewed build
-from the updated source or a later release that explicitly includes it.
+This fix is included in beta.4 and later image assets; beta.3 images do not
+contain it.
 Arbitrary reordering of already-played history is not supported by this in-place
 update; it is rejected without editing the native queue. A physical transition
 racing a queue edit can require the controller to retry its refresh.
