@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shlex
+import xml.etree.ElementTree as ET
 import subprocess
 import time
 
@@ -28,10 +30,17 @@ def main():
         if not value: raise RuntimeError('Failed: ' + label)
         print('PASS ' + label, flush=True)
     def start(mount):
-        dk('run', '-d', '--name', name, '--network', 'none', '--init', '--read-only',
-           '--user', '10001:10001', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true',
-           '--tmpfs', '/tmp:size=16m,mode=1777', '--restart', 'no',
-           '-e', 'BRIDGE_HOST=192.0.2.10', '-e', 'BRIDGE_SETUP_CODE=synthetic-installer-code-123456789012345', '-e', 'BRIDGE_LISTEN_HOST=127.0.0.1', '-v', mount + ':/data', image)
+        # Exercise the shipped Unraid command, overriding only networking,
+        # test resource names and restart policy for isolated assertions.
+        template = ET.parse(args.context / 'unraid/plex-bridge.xml').getroot()
+        options = shlex.split(template.findtext('ExtraParams'))
+        options[options.index('--mount') + 1] = (
+            ('type=bind' if mount.startswith('/') else 'type=volume')
+            + ',source=' + mount + ',target=/data')
+        options = ['--restart=no' if opt == '--restart=unless-stopped' else opt for opt in options]
+        dk('run', '-d', '--name', name, '--network', 'none', *options,
+           '-e', 'BRIDGE_HOST=192.0.2.10', '-e', 'BRIDGE_SETUP_CODE=synthetic-installer-code-123456789012345',
+           '-e', 'BRIDGE_LISTEN_HOST=127.0.0.1', image)
         created.append(name)
     def healthy():
         deadline = time.monotonic() + 75
