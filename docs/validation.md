@@ -14,7 +14,9 @@ scanned image artifact, then verifies anonymous pull and fresh startup.
 
 The first scan detected fixed Alpine dependency vulnerabilities in the old
 pinned base. The candidate now pins official Python 3.12.16 on Alpine 3.24
-by digest; the normal security gate remains mandatory.
+by digest and installs the remaining signed krb5-libs 1.22.3-r0 fix from
+Alpine with an exact download checksum. The offline package installer verifies
+the Alpine signature. The normal security gate remains mandatory.
 
 Unraid template structure, storage, security options and version consistency
 are checked automatically. An independent Unraid install, first-user usability

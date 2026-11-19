@@ -1,5 +1,12 @@
 # Official Python base pinned after beta image vulnerability review.
 FROM python:3.12.16-alpine3.24@sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89 AS base
+# The current upstream image still carries krb5-libs 1.22.2. Fetch the exact
+# signed Alpine fix; BuildKit verifies its digest before the offline apk step.
+# Distribution target is Linux amd64, as declared in the beta requirements.
+ADD --checksum=sha256:fad5b46a953e6a37a1bb61a84538fa08ecb6a07816f439eb06f2735aebfcbfbf https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/krb5-libs-1.22.3-r0.apk /tmp/krb5-fix.apk
+RUN test "$(apk --print-arch)" = x86_64 \
+    && apk add --no-network /tmp/krb5-fix.apk \
+    && rm /tmp/krb5-fix.apk
 ARG VERSION=0.1.0-beta.5
 LABEL org.opencontainers.image.source="https://github.com/onelivewire/plex-bridge" \
       org.opencontainers.image.title="plex-bridge" \
