@@ -1,5 +1,5 @@
 # Official Python base pinned after beta image vulnerability review.
-FROM python:3.12.14-alpine3.24@sha256:4c47124a8391cb7a9f571164147d154777cf012a4ece5f86097130d7a4478111 AS base
+FROM python:3.12.16-alpine3.24@sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89 AS base
 ARG VERSION=0.1.0-beta.5
 LABEL org.opencontainers.image.source="https://github.com/onelivewire/plex-bridge" \
       org.opencontainers.image.title="plex-bridge" \
