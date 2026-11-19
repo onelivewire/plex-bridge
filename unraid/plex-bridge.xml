@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>plex-bridge</Name>
+  <Repository>ghcr.io/onelivewire/plex-bridge:0.1.0-beta.5</Repository>
+  <Registry>https://github.com/onelivewire/plex-bridge/pkgs/container/plex-bridge</Registry>
+  <Network>host</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/onelivewire/plex-bridge/issues</Support>
+  <Project>https://github.com/onelivewire/plex-bridge</Project>
+  <Overview>Play Plex music on WiiM players. Linux x86-64 beta; independent Unraid acceptance pending. Enter this server's reserved LAN IPv4 and a private 32–256 character setup code from your password manager. After starting, open WebUI. Ports 8793–8795 must be free. Data lives in the Docker named volume plex-bridge-data, NOT appdata: include it in stopped backups before replacing Docker storage. See the project quick-start for backup and reviewed updates. One active Plex queue; trusted LAN only.</Overview>
+  <Category>MediaApp:Music</Category>
+  <WebUI>http://[IP]:8795/</WebUI>
+  <ExtraParams>--init --read-only --user=10001:10001 --cap-drop=ALL --security-opt=no-new-privileges:true --tmpfs /tmp:size=16m,mode=1777 --mount type=volume,source=plex-bridge-data,target=/data --restart=unless-stopped --stop-timeout=15 --log-opt max-size=10m --log-opt max-file=3</ExtraParams>
+  <Config Name="Server LAN address" Target="BRIDGE_HOST" Default="" Mode="" Description="This Unraid server's reserved IPv4 address, for example 192.168.1.10. No http:// or port." Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Private setup code" Target="BRIDGE_SETUP_CODE" Default="" Mode="" Description="Generate 32–256 characters in your password manager; no spaces. Enter the same code on the first WebUI screen. Keep it private. Used only on first launch." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+</Container>

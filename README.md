@@ -6,71 +6,34 @@ playback controls, native WiiM grouping, and amplifier-off Sleep.
 [Symfonium](docs/symfonium.md) is an optional controller, with a dedicated
 connection for avoiding duplicate Last.fm reports.
 
-**Version: 0.1.0-beta.4.** This is a candidate for a small, supervised beta,
-not a broadly certified release. See [validation results](docs/validation.md) and the [tester checklist](docs/beta-testing.md).
-No published image registry is required: build one image from this source.
-Setup, playback, and room grouping run together in one container with one data mount.
+**Version: 0.1.0-beta.5.** Guided beta for Linux x86-64 Docker hosts.
+One container, one private data volume, and a browser setup wizard.
 
-## Before installing
+## Install and start listening
 
-- A Linux Docker Engine host with Docker Compose v2, a reserved LAN IPv4 address,
-  and ports **8793, 8794, 8795** available. Host networking is required.
-- A Plex music server, a Plex account with access to it, Plexamp, and at least
-  one WiiM on the same trusted LAN. Reserve their addresses in your router.
-- Internet access for the initial image build and Plex account linking.
-- Permission to control the selected rooms during testing.
+Follow the **[quick-start](docs/quick-start.md)**:
 
-Plex and the bridge can run on different machines. This release supports
-**one active Plex queue per installation**, even though each room appears as
-an endpoint. Selecting another room can move/replace that session; this is not
-independent simultaneous Plex playback per room. Native WiiM groups share audio.
+- **Unraid:** use the supplied [install template](unraid/plex-bridge.xml), enter
+  your server address and private setup code, then open WebUI. Independent
+  Unraid acceptance and Community Applications listing are pending.
+- **Other Linux Docker hosts:** download the two small configuration files, set
+  your server address, and run `docker compose up -d`. Docker downloads the
+  versioned prebuilt image; no source build is required.
 
-Do not expose these ports to the internet. Plex Companion controls trust LAN
-clients and do not authenticate them using the dashboard password. External reverse
-proxies, Docker Desktop, routed VLAN discovery, and IPv6 deployment are not
-accepted beta targets. Read [security and privacy](SECURITY.md).
+The wizard discovers devices, creates your administrator login, guides Plex
+linking, and checks actual playback. Plex can run on another machine. You need
+Plexamp, a Plex music library and at least one WiiM on the same trusted LAN.
+Reserve their addresses in your router. Ports **8793–8795** must be available.
 
-## Install
+This beta supports **one active Plex queue per installation**, rather than
+independent simultaneous Plex queues per room. Do not expose it to the internet.
+ARM, Docker Desktop and routed VLAN discovery are not accepted targets.
+See [validation](docs/validation.md) and [security](SECURITY.md).
 
-Using Unraid? Start with the [Unraid installation notes](docs/setup.md#installing-on-unraid),
-including Compose Manager, persistent storage, backups, and the platform validation limits.
-
-Start in the directory containing this README and `compose.yaml` from the
-reviewed release archive. Do not copy an existing installation's private data.
-
-```sh
-cp deployment.env.example .env
-```
-
-Edit `.env`: replace the documentation-only `BRIDGE_HOST=192.0.2.10` with
-this Docker host's reserved LAN IPv4 address. Leave the release version intact.
-Run Docker commands with the permissions required on your host.
-
-```sh
-docker compose build
-docker compose up -d
-docker compose ps
-docker compose exec bridge python -c 'import json; from pathlib import Path; print(json.loads(Path("/data/setup/setup-code.json").read_text())["code"])'
-```
-
-The last command displays your private setup code. It prevents someone else on
-the LAN from claiming the installation before you. Do not post it in an issue.
-Open `http://YOUR-LAN-IP:8795` using the address you configured, enter that code,
-and follow [the complete setup guide](docs/setup.md), including its final step
-to bookmark the dashboard and practice collecting a support download. Keep the
-included [step-by-step playback support instructions](docs/support.md) with your
-installation. They cover failures, reviewing results, submitting a report, and
-what to do when the dashboard is unavailable.
-
-The container supervises setup, playback, and topology processes together. Until
-local setup finishes, playback and topology wait for configuration. Its health
-check covers all three processes; healthy does not mean Plex linking or audible
-playback is verified. If a process exits, the whole container stops so Docker
-can restart it consistently. All durable files are under `/data`.
-
-Existing three-container installations: keep using your existing layout or
-[the split Compose instructions](docs/split-layout.md). The new default does
-not automatically migrate the old six volumes.
+For a source build, use `docker compose -f compose.source.yaml build` followed
+by `docker compose -f compose.source.yaml up -d` with the included `.env`.
+Existing split installations should follow [split-layout guidance](docs/split-layout.md);
+changing Compose files does not migrate their data.
 
 ## Use
 

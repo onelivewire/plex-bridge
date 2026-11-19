@@ -1,108 +1,27 @@
 # Setup, from first launch to music
 
-## Installing on Unraid
+New installs should start with the [quick-start](quick-start.md). The default
+Compose file pulls a prebuilt versioned image. Unraid uses the included template;
+Compose Manager is no longer a prerequisite. The sections below explain the
+browser wizard and advanced storage choices.
 
-Plex Bridge runs alongside Plex and makes your WiiMs available as Plexamp
-playback destinations. This release runs setup, playback and grouping in **one
-container**, with **one persistent `/data` mount**. The dashboard controls rooms;
-Plexamp browses music. Add Symfonium only after ordinary playback works.
+## Advanced storage and source builds
 
-This remains a guided beta installation. The single-container package and a
-host-directory restore are tested on Linux Docker; independent Unraid and WiiM
-hardware acceptance is pending. No Community Applications template is supplied.
+The default Docker named volume is initialized with the image's unprivileged
+UID/GID 10001:10001; no manual directory ownership command is needed. It is not
+an Unraid appdata directory. Include the verified volume in stopped backups.
+For an existing administrator-managed bind directory, prepare ownership
+10001:10001 and mode 700 before setting `BRIDGE_DATA_PATH`. Do not reset broad
+appdata permissions. Keep complete `/data` contents and the same mount on update.
 
-### Prepare the release and Compose
-
-Enable Docker and install a compatible
-[Compose Manager plugin](https://github.com/mstrhakr/compose_plugin), then verify
-`docker compose version` in the terminal. Unraid's
-[Docker overview](https://docs.unraid.net/unraid-os/using-unraid-to/run-docker-containers/overview/)
-explains its appdata conventions and lack of native Compose support. The plugin
-is a deployment convenience; only one application container is created.
-
-Extract the entire reviewed source archive into a persistent directory, such as
-`/mnt/user/appdata/plex-bridge/source`. Keep its Dockerfile, package and Compose
-file together; pasting Compose alone does not supply the source build context.
-From that directory, copy `deployment.env.example` to `.env`. Set `BRIDGE_HOST`
-to Unraid's reserved LAN IPv4 address and keep the release version pinned.
-Reserve Plex/WiiM addresses too. Keep host networking; ports 8793–8795 must be
-free. Do not substitute a custom container IP or port mappings.
-
-### Set up one appdata directory
-
-For a **new installation**, create an empty data directory owned by the
-container's numeric UID/GID, using the Unraid administrator terminal:
-
-```sh
-install -d -m 700 -o 10001 -g 10001 /mnt/user/appdata/plex-bridge/data
-```
-
-Add this to `.env`:
-
-```ini
-BRIDGE_DATA_PATH=/mnt/user/appdata/plex-bridge/data
-```
-
-The Compose file mounts that directory at `/data`. It holds setup credentials,
-Plex links, room identities, both runtimes' configuration and state, and history.
-Do not use the source directory as the data directory. Do not use a broad
-permission-reset operation on appdata: the bridge runs as **10001:10001**, not
-Unraid's usual application account. It does not use PUID/PGID variables or run
-as root to repair ownership. Prepare ownership before first launch.
-
-If you omit `BRIDGE_DATA_PATH`, Docker creates the named volume `bridge-data`
-(with the Compose project prefix). That volume is not automatically under
-appdata. An appdata-only backup may miss it. See
-[Docker volumes](https://docs.docker.com/engine/storage/volumes/).
-
-Stop the bridge before backing up the complete data directory/volume, preserve
-numeric ownership and modes, and retain `.env` and the matching release/images.
-Test recovery before relying on the backup. Do not delete Unraid Docker storage
-assuming that a named volume has an appdata copy. Existing six-volume installs
-must follow [the split-layout guidance](split-layout.md); changing mounts alone
-would create a different installation.
-
-### Start and verify
-
-From the extracted source directory:
-
-```sh
-docker compose build
-docker compose up -d
-docker compose ps
-docker compose exec bridge python -c 'import json; from pathlib import Path; print(json.loads(Path("/data/setup/setup-code.json").read_text())["code"])'
-```
-
-Alternatively, load/tag the exact release's tested amd64 image as its release
-notes describe and start with `docker compose up -d --no-build`. Keep the setup
-code private. Open `http://UNRAID-IP:8795` and continue at step 1 below. Plex can
-run on Unraid or another host; enter its reachable LAN URL.
-
-Start with one room: confirm sound, pause/resume, volume, Sleep and amplifier
-wake. Then test grouping and presets, and finally optional
-[Symfonium/Last.fm](symfonium.md). The dashboard is
-`http://UNRAID-IP:8794/dashboard`. [Diagnose playback and logs](support.md) help
-with failures; container health is not proof of sound.
-
-### Updates and recovery
-
-Assign an installation owner to check releases/security notices weekly. Leave
-automatic image updates and automatic Git deployments disabled. Apply approved
-versions during a quiet window after a stopped backup, preserving the same
-Compose project name and data mount. Retain the previous image and full data
-snapshot for rollback. Configure failed backup/update notifications through the
-owner's existing Unraid or scheduler notification workflow; this stack does not
-install that service. Follow [maintenance](maintenance.md), and repeat playback
-and optional Last.fm checks afterward. Manage Compose Manager updates separately.
-
-Record Unraid, Compose, Plex and WiiM versions and complete the
-[beta checklist](beta-testing.md), including restart, backup/restore and actual
-hardware playback. Linux packaging tests do not replace this acceptance.
+Source builders use the full reviewed source archive, `.env`, and
+`docker compose -f compose.source.yaml build` / `up -d`. Existing three-container
+installations must use [split-layout instructions](split-layout.md).
 
 ## 1. Claim the installation and create an administrator
 
-Follow the README's Docker commands. At port 8795, enter the setup code printed
-by the local command. Create a username and a unique password of at least 12
+At port 8795, enter the private code chosen in the install form or retrieved
+with `docker compose exec bridge python -m plex_bridge.setup_code`. Create a username and a unique password of at least 12
 characters. Store that password in your password manager. It is the dashboard
 login, not your Plex password. The bridge stores a password hash.
 

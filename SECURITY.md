@@ -22,6 +22,12 @@ administrator password protects every Plex-compatible route.
   The optional split layout retains separate mounts and read-only runtime configs.
   Choose that layout if stronger internal credential separation matters.
 
+The optional `BRIDGE_SETUP_CODE` accepts a private password-manager value only
+when creating a fresh installation. It never resets saved setup, administrator
+credentials or completed state. The install form/environment and saved code are
+private; do not share Docker Inspect, template exports or resolved Compose
+output. The code is never printed by normal startup or support diagnostics.
+
 ## What is private
 
 Room names, addresses, Plex tokens, media/session data, password hashes, signing

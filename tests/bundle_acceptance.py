@@ -31,7 +31,7 @@ def main():
         dk('run', '-d', '--name', name, '--network', 'none', '--init', '--read-only',
            '--user', '10001:10001', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true',
            '--tmpfs', '/tmp:size=16m,mode=1777', '--restart', 'no',
-           '-e', 'BRIDGE_HOST=192.0.2.10', '-e', 'BRIDGE_LISTEN_HOST=127.0.0.1', '-v', mount + ':/data', image)
+           '-e', 'BRIDGE_HOST=192.0.2.10', '-e', 'BRIDGE_SETUP_CODE=synthetic-installer-code-123456789012345', '-e', 'BRIDGE_LISTEN_HOST=127.0.0.1', '-v', mount + ':/data', image)
         created.append(name)
     def healthy():
         deadline = time.monotonic() + 75
@@ -57,6 +57,8 @@ from http.client import HTTPConnection
 from urllib.parse import urlencode
 import json,secrets,os
 assert os.getuid()==10001
+from plex_bridge.setup_code import pending_code
+assert pending_code('/data/setup')=='synthetic-installer-code-123456789012345'
 assert Path('/tmp/bridge-waiting-playback.json').exists()
 assert Path('/tmp/bridge-waiting-topology.json').exists()
 cookie=''
@@ -118,7 +120,7 @@ assert b'proxy_report_suppressed' in download
         logs = dk('logs', name)
         check('combined logs are structured and private fields excluded',
               all('event' in json.loads(line) for line in logs.splitlines() if line.strip())
-              and not any(v in logs for v in ['Synthetic room','synthetic-private','192.0.2.','Traceback']))
+              and not any(v in logs for v in ['Synthetic room','synthetic-private','synthetic-installer-code','192.0.2.','Traceback']))
         dk('restart', name); healthy()
         check('restart retains all state identities', before == fingerprint())
         # Kill a real child, not the supervisor: all services must stop together.

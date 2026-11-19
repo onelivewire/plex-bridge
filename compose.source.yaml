@@ -1,0 +1,33 @@
+name: plex-bridge
+
+services:
+  bridge:
+    image: plex-bridge:${BRIDGE_VERSION:-0.1.0-beta.5}
+    build:
+      context: .
+      target: bundle
+      args:
+        VERSION: ${BRIDGE_VERSION:-0.1.0-beta.5}
+    init: true
+    network_mode: host
+    read_only: true
+    user: "10001:10001"
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    stop_grace_period: 15s
+    environment:
+      BRIDGE_HOST: ${BRIDGE_HOST:?Set BRIDGE_HOST to the reserved LAN IPv4 address}
+      BRIDGE_SETUP_CODE: ${BRIDGE_SETUP_CODE:-}
+    volumes:
+      - ${BRIDGE_DATA_PATH:-bridge-data}:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  bridge-data:

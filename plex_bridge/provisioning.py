@@ -43,7 +43,7 @@ def read_json(path):
 
 
 class Provisioner:
-    def __init__(self, root):
+    def __init__(self, root, setup_code=None):
         self.root = Path(root)
         self.root.mkdir(mode=0o700, parents=True, exist_ok=True)
         os.chmod(self.root, 0o700)
@@ -61,7 +61,14 @@ class Provisioner:
                         raise ConfigError("Setup code file is invalid; restore its backup")
                     code = saved["code"]
                 else:
-                    code = secrets.token_urlsafe(32)
+                    if setup_code:
+                        if (not 32 <= len(setup_code) <= 256
+                                or not setup_code.isascii()
+                                or any(not 33 <= ord(c) <= 126 for c in setup_code)):
+                            raise ConfigError("Use a private setup code of 32–256 printable characters without spaces")
+                        code = setup_code
+                    else:
+                        code = secrets.token_urlsafe(32)
                     atomic_write(code_path, {"code": code})
                 atomic_write(path, {"schema_version": 1, "stage": "administrator",
                                    "code_hash": self.digest(code)})

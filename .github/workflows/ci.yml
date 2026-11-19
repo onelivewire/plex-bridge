@@ -3,6 +3,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish_image:
+        description: 'Publish the tested bundle from an exact version tag (maintainer only)'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -55,3 +60,41 @@ jobs:
             /tmp/playback-sbom.json
           if-no-files-found: error
           retention-days: 14
+
+  publish:
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_image && startsWith(github.ref, 'refs/tags/v') && github.repository == 'onelivewire/plex-bridge'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Verify release identity
+        run: |
+          version=$(python3 -c 'from plex_bridge import __version__; print(__version__)')
+          test "$GITHUB_REF_NAME" = "v$version"
+          echo "IMAGE=ghcr.io/$GITHUB_REPOSITORY:$version" >> "$GITHUB_ENV"
+      - name: Download the tested and scanned bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name beta-images-and-sboms --dir /tmp/release
+          docker load -i /tmp/release/bridge-bundle.tar
+          docker tag pb-acceptance-ci-bundle "$IMAGE"
+      - name: Publish exact tested image
+        env:
+          REGISTRY_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE"
+          docker logout ghcr.io
+      - name: Verify anonymous access and report digest
+        run: |
+          mkdir -p /tmp/anonymous-docker
+          DOCKER_CONFIG=/tmp/anonymous-docker docker manifest inspect "$IMAGE" > /tmp/manifest.json
+          echo '### Registry image' >> "$GITHUB_STEP_SUMMARY"
+          echo "Published $IMAGE from the tested bundle artifact." >> "$GITHUB_STEP_SUMMARY"
+          docker inspect "$IMAGE" --format '{{json .RepoDigests}}' >> "$GITHUB_STEP_SUMMARY"

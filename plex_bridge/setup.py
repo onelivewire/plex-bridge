@@ -103,7 +103,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             view = self.server.provisioner.view(self.token())
         except ConfigError:
-            self.page(200, "<p>Enter the setup code from the local setup-code.json file. "
+            self.page(200, "<p>Enter the private setup code you chose during installation. If you left it blank, open the container console and run <code>python -m plex_bridge.setup_code</code>. "
                       "Use this setup page only on your trusted LAN.</p><form method='post' action='/claim'>"
                       "<label>Setup code<input name='code' type='password' required autocomplete='off'></label>"
                       "<button>Continue setup</button></form>")
@@ -300,7 +300,7 @@ def main():
     host = os.environ.get("SETUP_HOST", "127.0.0.1")
     port = int(os.environ.get("SETUP_PORT", "8795"))
     origin = os.environ.get("SETUP_ORIGIN", f"http://{host}:{port}")
-    provisioner = Provisioner(root)
+    provisioner = Provisioner(root, setup_code=os.environ.get("BRIDGE_SETUP_CODE"))
     publish_configured(provisioner)  # Recover a restart between completion and export.
     server = SetupServer((host, port), provisioner, origin)
     logging.getLogger("plex_bridge").info("", extra={"event": "setup_ready"})

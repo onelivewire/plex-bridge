@@ -11,12 +11,14 @@
     "NOTICE",
     "README.md",
     "SECURITY.md",
+    "compose.source.yaml",
     "compose.split.yaml",
     "compose.yaml",
     "deployment.env.example",
     "docs/beta-testing.md",
     "docs/maintenance.md",
     "docs/presets.md",
+    "docs/quick-start.md",
     "docs/releasing.md",
     "docs/setup.md",
     "docs/split-layout.md",
@@ -42,6 +44,7 @@
     "plex_bridge/room_health.py",
     "plex_bridge/runtime.py",
     "plex_bridge/setup.py",
+    "plex_bridge/setup_code.py",
     "plex_bridge/support.py",
     "plex_bridge/symfonium_proxy.py",
     "plex_bridge/topology.py",
@@ -57,6 +60,7 @@
     "tests/test_discovery.py",
     "tests/test_history.py",
     "tests/test_host_layouts.py",
+    "tests/test_installation.py",
     "tests/test_onboarding.py",
     "tests/test_playback.py",
     "tests/test_provisioning.py",
@@ -73,6 +77,7 @@
     "tests/test_symfonium_proxy.py",
     "tests/test_topology.py",
     "tools/check_release.py",
-    "tools/extract_image_layers.py"
+    "tools/extract_image_layers.py",
+    "unraid/plex-bridge.xml"
   ]
 }

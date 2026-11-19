@@ -42,7 +42,8 @@ backup tool, Unraid filesystem, or physical hardware.
 ## Update ownership, schedule, and rollback
 
 The installation owner checks this repository's Releases and Security notices
-weekly. Use scheduled notifications if desired, with failures sent to the
+weekly. Versioned registry tags are pinned; same-tag update checks do not
+detect new release tags. Use scheduled notifications if desired, with failures sent to the
 owner's existing email/notification channel. No scheduler or email service is
 bundled. Leave unattended image updates and Git deployments disabled. A release
 notification is not authorization to install it.
@@ -50,11 +51,15 @@ notification is not authorization to install it.
 For an explicitly compatible reviewed release:
 
 1. Take the stopped backup and retain the current image and source.
-2. Extract the new reviewed source into a new directory. Copy the private `.env`,
-   update its exact version, and preserve `BRIDGE_HOST` and `BRIDGE_DATA_PATH`.
+2. Keep the current configuration directory and private `.env`; change only
+   `BRIDGE_VERSION` to the reviewed exact version. Preserve `BRIDGE_HOST`,
+   `BRIDGE_DATA_PATH` and the existing project name. Unraid users change the
+   Repository version without changing the named data volume in Extra Parameters.
 3. Use the same Compose project name (`docker compose -p YOUR-EXISTING-PROJECT`)
-   for every command so the existing named volume is selected. Build the new
-   image before replacement, then start it with that same project name and mount.
+   for every command so the existing named volume is selected. Run
+   `docker compose pull` then `docker compose up -d` with that project name.
+   Unraid users Apply the reviewed repository change. Source builders keep
+   using `compose.source.yaml` and build before replacement.
 4. Check container health, dashboard login, stable identities and actual room
    playback, including Symfonium/Last.fm if configured.
 5. If it fails, stop the new container, restore the complete pre-update data
