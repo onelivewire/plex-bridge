@@ -95,6 +95,15 @@ jobs:
         run: |
           mkdir -p /tmp/anonymous-docker
           DOCKER_CONFIG=/tmp/anonymous-docker docker manifest inspect "$IMAGE" > /tmp/manifest.json
+          DOCKER_CONFIG=/tmp/anonymous-docker docker pull "$IMAGE"
+          docker run -d --name pb-registry-smoke --network none --read-only --user 10001:10001 --cap-drop ALL --security-opt no-new-privileges:true --tmpfs /tmp:size=16m,mode=1777 --mount type=volume,source=pb-registry-smoke-data,target=/data -e BRIDGE_HOST=127.0.0.1 "$IMAGE"
+          for attempt in $(seq 1 45); do
+            status=$(docker inspect pb-registry-smoke --format '{{.State.Health.Status}}')
+            if [ "$status" = healthy ]; then break; fi
+            sleep 1
+          done
+          test "$status" = healthy
+          docker stop pb-registry-smoke
           echo '### Registry image' >> "$GITHUB_STEP_SUMMARY"
           echo "Published $IMAGE from the tested bundle artifact." >> "$GITHUB_STEP_SUMMARY"
           docker inspect "$IMAGE" --format '{{json .RepoDigests}}' >> "$GITHUB_STEP_SUMMARY"
