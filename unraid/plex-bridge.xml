@@ -4,8 +4,10 @@
   <Repository>ghcr.io/onelivewire/plex-bridge:0.1.0-beta.5</Repository>
   <Registry>https://github.com/onelivewire/plex-bridge/pkgs/container/plex-bridge</Registry>
   <Network>host</Network>
+  <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/onelivewire/plex-bridge/issues</Support>
+  <TemplateURL>https://raw.githubusercontent.com/onelivewire/plex-bridge/main/unraid/plex-bridge.xml</TemplateURL>
   <Project>https://github.com/onelivewire/plex-bridge</Project>
   <Overview>Play Plex music on WiiM players. Linux x86-64 beta; independent Unraid acceptance pending. Enter this server's reserved LAN IPv4 and a private 32–256 character setup code from your password manager. After starting, open WebUI. Ports 8793–8795 must be free. Data lives in the Docker named volume plex-bridge-data, NOT appdata: include it in stopped backups before replacing Docker storage. See the project quick-start for backup and reviewed updates. One active Plex queue; trusted LAN only.</Overview>
   <Category>MediaApp:Music</Category>
