@@ -1,4 +1,29 @@
-# 0.1.0-beta.4 validation record
+# 0.1.0-beta.5 installation validation
+
+Beta.5 replaces the beginner source-build path with a versioned registry image,
+adds an Unraid tester template, and accepts an optional private installation
+code without resetting existing state. Source builds remain available through
+`compose.source.yaml`.
+
+Local validation ran 334 tests: 331 passed and the three Chrome tests were
+skipped because no local Chromium executable was configured. CI runs those
+browser tests plus both container-layout install/restart/restore checks and the
+existing source/image security gates. Publication requires the exact versioned
+CI run linked in the release notes. Registry publication reuses that run's
+scanned image artifact, then verifies anonymous pull and fresh startup.
+
+The first scan detected fixed Alpine dependency vulnerabilities in the old
+pinned base. The candidate now pins official Python 3.12.16 on Alpine 3.24
+by digest; the normal security gate remains mandatory.
+
+Unraid template structure, storage, security options and version consistency
+are checked automatically. An independent Unraid install, first-user usability
+trial, real-device playback, cross-version migration and Community Applications
+listing remain pending. The default template uses a Docker named volume, which
+must be backed up separately from appdata.
+
+## Historical beta.4 validation
+
 
 Beta.4 adds verified in-place synchronization of rolling Plex queues with the
 WiiM native queue. The preceding source commit passed 330 tests including real
@@ -54,8 +79,9 @@ Container tests use synthetic devices, no published ports, and disabled external
 networking. They do not contact real Plex accounts or WiiMs. The appdata-style
 bind-mount test is on Linux Docker, not an Unraid host. The published single-image
 archive contains the tested Linux amd64 `pb-acceptance-ci-bundle:latest` image;
-release notes explain loading and retagging it. Standard installation builds
-from source. No rolling registry tag or unattended updater is supplied.
+release notes explain loading and retagging it for historical releases. Beta.5
+uses the versioned registry image by default; source builds remain optional.
+No rolling registry tag or unattended updater is supplied.
 
 ## Still pending
 

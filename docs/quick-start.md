@@ -13,7 +13,7 @@ Compose Manager and file-permission commands. It is a **tester template**;
 independent Unraid acceptance and Community Applications listing are pending.
 It will not yet appear in the Apps search results.
 
-1. Download `plex-bridge.xml`. Through your existing Unraid flash-share access,
+1. [Download plex-bridge.xml](https://github.com/onelivewire/plex-bridge/releases/download/v0.1.0-beta.5/plex-bridge.xml). Through your existing Unraid flash-share access,
    save it as `config/plugins/dockerMan/templates-user/my-plex-bridge.xml`.
    Keep existing templates. Alternatively, use Docker → Add Container and copy
    the repository, host network, environment fields and Extra Parameters from
@@ -34,8 +34,9 @@ name and use another host; the three fixed listening ports cannot be shared.
 
 ## Other Linux Docker hosts
 
-Download just `compose.yaml` and `deployment.env.example` from the same reviewed
-release into a new folder. Copy `deployment.env.example` to `.env`, set
+[Download compose.yaml](https://github.com/onelivewire/plex-bridge/releases/download/v0.1.0-beta.5/compose.yaml)
+and [deployment.env.example](https://github.com/onelivewire/plex-bridge/releases/download/v0.1.0-beta.5/deployment.env.example)
+into a new folder. Copy `deployment.env.example` to `.env`, set
 `BRIDGE_HOST` to this Docker host's reserved LAN IPv4 address, and optionally
 set `BRIDGE_SETUP_CODE` to a private 32–256 character password-manager value.
 Keep the supplied exact version. From that folder run:
